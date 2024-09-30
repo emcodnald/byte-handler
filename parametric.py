@@ -1088,7 +1088,7 @@ def horShift(p,x):
     for i in range(len(f)):
         sub=poly([f[i]])
         for j in range(len(f)-i-1):
-            sub=mult(sub,poly([1,-x]))
+            sub=multPoly(sub,poly([1,-x]))
         for j in range(len(sub.c)):
             final[i+j]+=sub.c[j]
     return poly(final)
@@ -1455,6 +1455,53 @@ def qComp(a,b):
     return abs(a-b)<pow(10,-6)
 
 """
+the pComp function - input: orderedPair object, orderedPair object | output: boolean
+takes two points and returns true if they are close enough in proximity
+"""
+def pComp(a,b):
+    return dist(a,b)<pow(10,-6)
+
+"""
+the rearrange function - input: array of para objects | output: array of para objects or none
+takes an array of para objects and returns a sequence representing an enclosed path. if no path can be made, none is returned
+"""
+def rearrange(cl):
+    inds = [0]
+    dirs = [True]
+    closed = False
+    count = 1
+    ep = cl[inds[0]].f(1)
+    rejected = []
+    while not closed:
+        if not count in inds and not count in rejected:
+            if pComp(ep,cl[count].f(0)):
+                inds.append(count)
+                dirs.append(True)
+                count = 0
+            elif pComp(ep,cl[count].f(1)):
+                inds.append(count)
+                dirs.append(False)
+                count = 0
+        count += 1
+        ep = cl[inds[-1]].f(dirs[-1])
+        if pComp(ep,cl[0].f(0)):
+            closed = True
+        if count == len(cl) and not closed:
+            rejected.append(inds[-1])
+            inds[-1:] = []
+            dirs[-1:] = []
+            count = 1
+            if len(inds) == 0:
+                return None
+    final = []
+    for i in range(len(inds)):
+        if dirs[i]:
+            final.append(cl[inds[i]])
+        else:
+            final.append(slicePara(cl[inds[i]],1,0))
+    return final
+
+"""
 the prism class
 
 represents a group of curves that make an enclosed area
@@ -1488,62 +1535,55 @@ functions:
 """
 class prism:
     def __init__(self,cl):
-        self.cl=cl
-        for i in range(len(cl)):
-            configData(cl[i])
-        self.isPrism = True
-        self.isPrism = qComp(cl[0].main[0].x,cl[-1].main[-1].x) and qComp(cl[0].main[0].y,cl[-1].main[-1].y)
-        count = 0
-        while count < len(cl)-1 and self.isPrism:
-            sp = cl[count+1].f(0)
-            ep = cl[count].f(1)
-            final = qComp(cl[count+1].main[0].x,cl[count].main[-1].x) and qComp(cl[count].main[0].y,cl[-1].main[-1].y)
-            count += 1
+        self.cl = rearrange(cl)
+        self.isPrism = (not self.cl == None)
         self.direction = 0
         self.area = 0
         self.perimeter = 0
         self.center = orderedPair(0,0)
         self.bounds = bounds(0,0,0,0)
         if self.isPrism:
+            for i in range(len(self.cl)):
+                configData(self.cl[i])
             final = 0
             nex = 0
-            self.bounds = bounds(cl[0].main[0].x,cl[0].main[0].y,cl[0].main[0].x,cl[0].main[0].y)
-            for i in range(len(cl)):
-                self.perimeter += cl[i].length
+            self.bounds = bounds(self.cl[0].main[0].x,self.cl[0].main[0].y,self.cl[0].main[0].x,self.cl[0].main[0].y)
+            for i in range(len(self.cl)):
+                self.perimeter += self.cl[i].length
                 subX = 0
                 subY = 0
-                for j in range(len(cl[i].main)-1):
-                    if cl[i].main[j].x < self.bounds.minX:
-                        self.bounds.minX = cl[i].main[j].x
-                    if cl[i].main[j].x > self.bounds.maxX:
-                        self.bounds.maxX = cl[i].main[j].x
-                    if cl[i].main[j].y < self.bounds.minY:
-                        self.bounds.minY = cl[i].main[j].y
-                    if cl[i].main[j].y > self.bounds.maxY:
-                        self.bounds.maxY = cl[i].main[j].y
-                    sp = midpoint(cl[i].main[j],cl[i].main[j+1])
-                    dsp = midpoint(cl[i].deriv[j],cl[i].deriv[j+1])
-                    ddsp = midpoint(cl[i].doubleDeriv[j],cl[i].doubleDeriv[j+1])
-                    mag = cl[i].positions[j+1]-cl[i].positions[j]
+                for j in range(len(self.cl[i].main)-1):
+                    if self.cl[i].main[j].x < self.bounds.minX:
+                        self.bounds.minX = self.cl[i].main[j].x
+                    if self.cl[i].main[j].x > self.bounds.maxX:
+                        self.bounds.maxX = self.cl[i].main[j].x
+                    if self.cl[i].main[j].y < self.bounds.minY:
+                        self.bounds.minY = self.cl[i].main[j].y
+                    if self.cl[i].main[j].y > self.bounds.maxY:
+                        self.bounds.maxY = self.cl[i].main[j].y
+                    sp = midpoint(self.cl[i].main[j],self.cl[i].main[j+1])
+                    dsp = midpoint(self.cl[i].deriv[j],self.cl[i].deriv[j+1])
+                    ddsp = midpoint(self.cl[i].doubleDeriv[j],self.cl[i].doubleDeriv[j+1])
+                    mag = self.cl[i].positions[j+1]-self.cl[i].positions[j]
                     if pow(dsp.x,2)+pow(dsp.y,2) > 0:
                         final += (dsp.x*ddsp.y-dsp.y*ddsp.x)/(pow(dsp.x,2)+pow(dsp.y,2))*mag
                     self.area += (sp.x*dsp.y-sp.y*dsp.x)/2*mag
                     subX += sp.x*mag
                     subY += sp.y*mag
-                if cl[i].main[-1].x < self.bounds.minX:
-                    self.bounds.minX = cl[i].main[-1].x
-                if cl[i].main[-1].x > self.bounds.maxX:
-                    self.bounds.maxX = cl[i].main[-1].x
-                if cl[i].main[-1].y < self.bounds.minY:
-                    self.bounds.minY = cl[i].main[-1].y
-                if cl[i].main[-1].y > self.bounds.maxY:
-                    self.bounds.maxY = cl[i].main[-1].y
-                self.center.x += subX/len(cl)
-                self.center.y += subY/len(cl)
-                if i < len(cl)-1:
-                    nex = (cl[i+1].startAn-cl[i].endAn)*math.pi/180
-                    if abs(cl[i+1].startAn-cl[i].endAn) == 180:
-                        if daCent(cl[i+1].f(0.000001))-daCent(cl[i].f(0.999999)) > 0:
+                if self.cl[i].main[-1].x < self.bounds.minX:
+                    self.bounds.minX = self.cl[i].main[-1].x
+                if self.cl[i].main[-1].x > self.bounds.maxX:
+                    self.bounds.maxX = self.cl[i].main[-1].x
+                if self.cl[i].main[-1].y < self.bounds.minY:
+                    self.bounds.minY = self.cl[i].main[-1].y
+                if self.cl[i].main[-1].y > self.bounds.maxY:
+                    self.bounds.maxY = self.cl[i].main[-1].y
+                self.center.x += subX/len(self.cl)
+                self.center.y += subY/len(self.cl)
+                if i < len(self.cl)-1:
+                    nex = (self.cl[i+1].startAn-self.cl[i].endAn)*math.pi/180
+                    if abs(self.cl[i+1].startAn-self.cl[i].endAn) == 180:
+                        if daCent(self.cl[i+1].f(0.000001))-daCent(self.cl[i].f(0.999999)) > 0:
                             nex = math.pi
                         else:
                             nex = -math.pi
@@ -1552,9 +1592,9 @@ class prism:
                     elif nex < -math.pi:
                         nex += (2*math.pi)
                     final += nex
-            nex = (cl[0].startAn-cl[-1].endAn)*math.pi/180
-            if abs(cl[0].startAn-cl[-1].endAn) == 180:
-                if daCent(cl[0].f(0.000001))-daCent(cl[-1].f(0.999999)) > 0:
+            nex = (self.cl[0].startAn-self.cl[-1].endAn)*math.pi/180
+            if abs(self.cl[0].startAn-self.cl[-1].endAn) == 180:
+                if daCent(self.cl[0].f(0.000001))-daCent(self.cl[-1].f(0.999999)) > 0:
                     nex = math.pi
                 else:
                     nex = -math.pi
@@ -1994,7 +2034,7 @@ def leg(n,l,c):
                 sub=[-1,-cL[j][i]]
             else:
                 sub=[1,-cL[j][i]]
-            prod=mult(prod,poly(sub))
+            prod=multPoly(prod,poly(sub))
         for i in range(len(prod.c)):
             gFinal[i]+=prod.c[i]
     gFinal=horShift(poly(gFinal),-l)
@@ -2755,4 +2795,3 @@ def angleDeriv(c):
     sub.append([1,[[ix,ix],[iy,iy]],0,False])
     sub.append([2,[-2,-1],0,False])
     return sub
-
