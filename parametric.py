@@ -526,7 +526,7 @@ functions:
 """
 class pixel:
     def __init__(self, pos, magnitude):
-        self.pos = pos
+        self.pos = orderedPair(int(pos.x),int(pos.y))
         self.magnitude = magnitude
     def pr(self):
         self.pos.pr()
@@ -1264,6 +1264,11 @@ class fillSquare:
     def __init__(self,center,size):
         self.center = center
         self.size = size
+
+"""
+the insertIn function - input: value, array, positive integer | output: array
+takes an array and inserts a value at a certain index
+"""
 def insertIn(v,l,ind):
     final = []
     for i in range(ind):
@@ -1441,6 +1446,13 @@ takes two bounds objects and returns true if their ranges overlap
 """
 def overlap(b1,b2):
     return b1.maxX > b2.minX and b1.minX < b2.maxX and b1.maxY > b2.minY and b1.minY < b2.maxY
+
+"""
+the qComp function - input: number, number | output: boolean
+takes two numbers and returns true if they are close enough in proximity
+"""
+def qComp(a,b):
+    return abs(a-b)<pow(10,-6)
 
 """
 the prism class
@@ -1662,7 +1674,7 @@ class prism:
                 if newBlocks[i][0] and newBlocks[i][1] and newBlocks[i][2] and newBlocks[i][3]:
                     sub5 = True
                     for j in range(len(self.cl)):
-                        sub4 = detectInter(sub2,self.cl[j],"ai")
+                        sub4 = detectInter(sub2,self.cl[j],False)
                         if len(sub4) > 0:
                             sub5 = False
                     if sub5:
@@ -1672,7 +1684,7 @@ class prism:
                 elif not newBlocks[i][0] and not newBlocks[i][1] and not newBlocks[i][2] and not newBlocks[i][3]:
                     sub5 = True
                     for j in range(len(self.cl)):
-                        sub4 = detectInter(sub2,self.cl[j],"ai")
+                        sub4 = detectInter(sub2,self.cl[j],False)
                         if len(sub4) > 0:
                             sub5 = False
                     if sub5:
@@ -1815,7 +1827,10 @@ class prism:
                     if sub:
                         ac.append([classBlocks[i][0],classBlocks[i][1]])
             final.append([sortedPoints,ac])
-        return confirmed
+        squares = []
+        for i in range(len(confirmed)):
+            squares.append(fillSquare(orderedPair(int(confirmed[i][0]),int(confirmed[i][1])),int(confirmed[i][2])))
+        return squares
 
 """
 the findInter function - input: para object, para object | output: array of intersection objects
