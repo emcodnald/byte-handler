@@ -871,7 +871,6 @@ def configData(f):
         f.deriv = []
         f.doubleDeriv = []
         f.length = 0
-        finalPos = []
         df = dPara(f)
         ddf = dPara(df)
         p = 0
@@ -919,9 +918,6 @@ def configData(f):
                 f.conX = False
             if not ddp.y == 0:
                 f.conY = False
-        if len(finalPos) >= 2:
-            finalPos[-1] = (finalPos[-2]+1)/2
-            final[-1] = f.f(finalPos[-1])
         p = 1
         fp = f.f(p)
         dp = df.f(p)
@@ -1941,7 +1937,7 @@ def tangent(b,bp,s,sp):
     final=para(s.x,s.y)
     stp = s.f(sp)
     sub = translationNode([0,-stp.x,-stp.y])
-    final=translateCurve([final],[sub])[0]
+    final=transformCurve([final],[sub])[0]
     ds = dPara(s)
     db = dPara(b)
     sa=daCent(ds.f(sp))
@@ -1949,7 +1945,7 @@ def tangent(b,bp,s,sp):
     sub2 = translationNode([1,ba-sa])
     bap = b.f(bp)
     sub3 = translationNode([0,bap.x,bap.y])
-    final=translateCurve([final],[sub2,sub3])[0]
+    final=transformCurve([final],[sub2,sub3])[0]
     return optPara(final)
 
 """
@@ -2475,29 +2471,6 @@ def voronoi(pr,pl):
                 sub = slicePara(sub,1,0)
             sub2.append(sub)
         subPrisms.append(prism(sub2))
-    for i in range(len(paraLines)):
-        sp = paraLines[i].f(0)
-        ep = paraLines[i].f(1)
-        sub = "[1,["
-        sub += str(sp.x)
-        sub += ","
-        sub += str(sp.y)
-        sub += "],[],["
-        sub += str(ep.x)
-        sub += ","
-        sub += str(ep.y)
-        sub += "],[1.5,0,1,0,"
-        if nodeConfig[i][0]:
-            sub += "1"
-        else:
-            sub += "0"
-        sub += ",1,"
-        if nodeConfig[i][1]:
-            sub += "1"
-        else:
-            sub += "0"
-        sub += "]],"
-        print(sub)
     return [paraLines,subPrisms]
 
 """
