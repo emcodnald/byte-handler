@@ -871,6 +871,7 @@ def configData(f):
         f.deriv = []
         f.doubleDeriv = []
         f.length = 0
+        finalPos = []
         df = dPara(f)
         ddf = dPara(df)
         p = 0
@@ -918,6 +919,9 @@ def configData(f):
                 f.conX = False
             if not ddp.y == 0:
                 f.conY = False
+        if len(finalPos) >= 2:
+            finalPos[-1] = (finalPos[-2]+1)/2
+            final[-1] = f.f(finalPos[-1])
         p = 1
         fp = f.f(p)
         dp = df.f(p)
@@ -1937,7 +1941,7 @@ def tangent(b,bp,s,sp):
     final=para(s.x,s.y)
     stp = s.f(sp)
     sub = translationNode([0,-stp.x,-stp.y])
-    final=transformCurve([final],[sub])[0]
+    final=translateCurve([final],[sub])[0]
     ds = dPara(s)
     db = dPara(b)
     sa=daCent(ds.f(sp))
@@ -1945,7 +1949,7 @@ def tangent(b,bp,s,sp):
     sub2 = translationNode([1,ba-sa])
     bap = b.f(bp)
     sub3 = translationNode([0,bap.x,bap.y])
-    final=transformCurve([final],[sub2,sub3])[0]
+    final=translateCurve([final],[sub2,sub3])[0]
     return optPara(final)
 
 """
@@ -2471,6 +2475,29 @@ def voronoi(pr,pl):
                 sub = slicePara(sub,1,0)
             sub2.append(sub)
         subPrisms.append(prism(sub2))
+    for i in range(len(paraLines)):
+        sp = paraLines[i].f(0)
+        ep = paraLines[i].f(1)
+        sub = "[1,["
+        sub += str(sp.x)
+        sub += ","
+        sub += str(sp.y)
+        sub += "],[],["
+        sub += str(ep.x)
+        sub += ","
+        sub += str(ep.y)
+        sub += "],[1.5,0,1,0,"
+        if nodeConfig[i][0]:
+            sub += "1"
+        else:
+            sub += "0"
+        sub += ",1,"
+        if nodeConfig[i][1]:
+            sub += "1"
+        else:
+            sub += "0"
+        sub += "]],"
+        print(sub)
     return [paraLines,subPrisms]
 
 """
@@ -2528,13 +2555,14 @@ def optFull(f):
                 while count<len(uniques) and not found:
                     if final.l[uniques[count]].type == 0 and final.l[uniques[count]].function == final.l[i].function and final.l[uniques[count]].negate == final.l[i].negate:
                         found = False
-                        if len(final.l[uniques[count]].value.c) == len(final.l[i].value.c):
-                            found = True
-                            count2 = 0
-                            while count2 < len(final.l[uniques[count]].value.c) and found:
-                                if not final.l[uniques[count]].value.c[count2] == final.l[i].value.c[count2]:
-                                    found = False
-                                count2 += 1
+                        if final.l[uniques[count]].type == final.l[i].type:
+                            if len(final.l[uniques[count]].value.c) == len(final.l[i].value.c):
+                                found = True
+                                count2 = 0
+                                while count2 < len(final.l[uniques[count]].value.c) and found:
+                                    if not final.l[uniques[count]].value.c[count2] == final.l[i].value.c[count2]:
+                                        found = False
+                                    count2 += 1
                     if not found:
                         count += 1
                 if found:
@@ -2545,14 +2573,16 @@ def optFull(f):
                 while count<len(uniques) and not found:
                     if final.l[uniques[count]].type == 1 and final.l[uniques[count]].function == final.l[i].function and final.l[uniques[count]].negate == final.l[i].negate:
                         found = True
-                        if len(final.l[uniques[count]].value) == len(final.l[i].value):
-                            for i in range(len(final.l[uniques[count]].value)):
-                                if not len(final.l[uniques[count]].value[i]) == len(final.l[i].value[i]):
+                        if not len(final.l[uniques[count]].value) == len(final.l[i].value):
+                            found = False
+                        else:
+                            for j in range(len(final.l[uniques[count]].value)):
+                                if len(final.l[uniques[count]].value[j]) == len(final.l[i].value[j]):
                                     found = False
                                 else:
                                     count2 = 0
-                                    while count2 < len(final.l[uniques[count]].value) and final:
-                                        if not final.l[uniques[count]].value[count2] == final.l[i].value[count2]:
+                                    while count2 < len(final.l[uniques[count]].value[j]) and found:
+                                        if not final.l[uniques[count]].value[j][count2] == final.l[i].value[j][count2]:
                                             found = False
                                         count2 += 1
                     if not found:
@@ -2565,13 +2595,14 @@ def optFull(f):
                 while count<len(uniques) and not found:
                     if final.l[uniques[count]].type == 2 and final.l[uniques[count]].function == final.l[i].function and final.l[uniques[count]].negate == final.l[i].negate:
                         found = False
-                        if len(final.l[uniques[count]].value) == len(final.l[i].value):
-                            found = True
-                            count2 = 0
-                            while count2 < len(final.l[uniques[count]].value) and found:
-                                if not final.l[uniques[count]].value[count2] == final.l[i].value[count2]:
-                                    found = False
-                                count2 += 1
+                        if final.l[uniques[count]].type == final.l[i].type:
+                            if len(final.l[uniques[count]].value) == len(final.l[i].value):
+                                found = True
+                                count2 = 0
+                                while count2 < len(final.l[uniques[count]].value) and found:
+                                    if not final.l[uniques[count]].value[count2] == final.l[i].value[count2]:
+                                        found = False
+                                    count2 += 1
                     if not found:
                         count += 1
                 if found:
