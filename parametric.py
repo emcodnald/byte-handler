@@ -692,6 +692,8 @@ class para:
             for i in range(len(final)):
                 devCo = dc.f(p)
                 mag = math.sqrt(devCo.x*devCo.x+devCo.y*devCo.y)
+                if mag == 0:
+                    mag = 100
                 r = [max(0,p-1/mag),min(1,p+1/mag)]
                 fip = p
                 run = True
@@ -735,6 +737,8 @@ class para:
             if highest == p:
                 dp = dc.f(p)
                 mag = math.sqrt(dp.x*dp.x+dp.y*dp.y)
+                if mag == 0:
+                    mag = 100
                 highest = p+1/mag
                 if highest > 1:
                     highest = 1
