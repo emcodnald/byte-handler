@@ -392,6 +392,58 @@ def dFull(f):
         cd.append(final.s()-1)
     return optFull(final)
 
+def dFull2(f):
+    final=copyFull(f)
+    cd=[]
+    for i in range(len(final.l)):
+        validDer=True
+        if final.l[i].type == 0:
+            if len(final.l[i].value.c)>1:
+                if len(final.l[i].value.c)>=2:
+                    final.append([0,dPoly(final.l[i].value),0,False])
+                else:
+                    final.append([3,dPoly(final.l[i].value).c[0]])
+            else:
+                final.append([3,0])
+        elif final.l[i].type == 1:
+            sub=[]
+            for j in range(len(final.l[i].value)):
+                for k in range(len(final.l[i].value[j])):
+                    sub.append([])
+                    for m in range(len(final.l[i].value[j])):
+                        if k == m:
+                            sub[-1].append(cd[final.l[i].value[j][m]])
+                        else:
+                            sub[-1].append(final.l[i].value[j][m])
+            final.append([1,sub,0,False])
+        elif final.l[i].type == 2:
+            final.append([1,[[cd[final.l[i].value[0]],final.l[i].value[1]]],0,False])
+            final.append([1,[[final.l[i].value[0],cd[final.l[i].value[1]]]],0,True])
+            final.append([1,[[-2],[-1]],0,False])
+            final.append([1,[[final.l[i].value[1],final.l[i].value[1]]],0,False])
+            final.append([2,[-2,-1],0,False])
+        elif final.l[i].type == 3:
+            final.append([3,0])
+        if final.l[i].type<3:
+            if final.l[i].function == 0:
+                if not final.l[-1].type == 3:
+                    final.l[-1].negate = final.l[i].negate
+                else:
+                    if final.l[i].negate:
+                        final[-1].value *= -1
+            elif final.l[i].function == 1:
+                final.append([3,2])
+                final.append([1,[[i,-1]],0,False])
+                final.append([2,[-3,-1],0,False])
+            elif final.l[i].function == 2:
+                final.append([final.l[i].type,final.l[i].value,3,final.l[i].negate])
+                final.append([1,[[-2,-1]],0,False])
+            elif final.l[i].function == 3:
+                final.append([final.l[i].type,final.l[i].value,2,not final.l[i].negate])
+                final.append([1,[[-2,-1]],0,False])
+        cd.append(final.s()-1)
+    return optFull2(final)
+
 """
 the singleDep function - input: full object, number | output: array
 takes a full object and finds out which entries depend on entry e
@@ -631,10 +683,10 @@ class para:
             else:
                 if whole[0]:
                     for i in range(2):
-                        final.append(orderedPair(initP[0],math.floor(initP[1])+i))
+                        final.append(orderedPair(initP.x,math.floor(initP.y)+i))
                 else:
                     for i in range(2):
-                        final.append(orderedPair(math.floor(initP[0])+i,initP[1]))
+                        final.append(orderedPair(math.floor(initP.x)+i,initP.y))
             highest = 0
             closeFinal = []
             for i in range(len(final)):
@@ -1007,7 +1059,7 @@ def compCurve(x,y):
     return para(x.x,y.y)
 
 """
-the transformNode class
+the transformationNode class
 
 represents values used in the transformation of a curve
 
@@ -1032,7 +1084,7 @@ attributes:
 
     object initiation uses an array of the format [type, value1, value2]
 """
-class translationNode:
+class transformationNode:
     def __init__(self,l):
         self.type=l[0]
         self.value1=l[1]
@@ -1940,16 +1992,16 @@ takes a base para object b and maps sample para object s based off of the refere
 def tangent(b,bp,s,sp):
     final=para(s.x,s.y)
     stp = s.f(sp)
-    sub = translationNode([0,-stp.x,-stp.y])
-    final=translateCurve([final],[sub])[0]
+    sub = transformationNode([0,-stp.x,-stp.y])
+    final=transformCurve([final],[sub])[0]
     ds = dPara(s)
     db = dPara(b)
     sa=daCent(ds.f(sp))
     ba=daCent(db.f(bp))
-    sub2 = translationNode([1,ba-sa])
+    sub2 = transformationNode([1,ba-sa])
     bap = b.f(bp)
-    sub3 = translationNode([0,bap.x,bap.y])
-    final=translateCurve([final],[sub2,sub3])[0]
+    sub3 = transformationNode([0,bap.x,bap.y])
+    final=transformCurve([final],[sub2,sub3])[0]
     return optPara(final)
 
 """
@@ -2123,7 +2175,7 @@ def doubleWarp(b1,b2,sl,d,o):
 the quadWarp function - input: para object, para object, para object, para object, array of para objects, scopeDimensions object, quickTranslate object | output: para object
 like singleWarp, except four base curves are used instead of one
 """
-def quadWarp(sa,na,ea,wa,sl,d,o):
+def quadWarp(na,sa,ea,wa,sl,d,o):
     final=[]
     for z in range(len(sl)):
         s=sl[z]
@@ -2577,7 +2629,7 @@ def optFull(f):
                             found = False
                         else:
                             for j in range(len(final.l[uniques[count]].value)):
-                                if len(final.l[uniques[count]].value[j]) == len(final.l[i].value[j]):
+                                if not len(final.l[uniques[count]].value[j]) == len(final.l[i].value[j]):
                                     found = False
                                 else:
                                     count2 = 0
@@ -2688,7 +2740,7 @@ def optFull(f):
             if f.l[sub[len(sub)-1][i][1]].type == 2:
                 sub3=singleDep(f,sub[len(sub)-1][i][1])
                 for j in range(len(sub3)):
-                    sub2.append(sub3[j])
+                    sub2.append([sub[len(sub)-1][i][1],sub3[j]])
             else:
                 sub3=[]
                 for j in range(len(f.l[sub[len(sub)-1][i][1]].value)):
@@ -2702,7 +2754,7 @@ def optFull(f):
                     keepList[sub[len(sub)-1][i][1]]=False
                     sub4=singleDep(f,sub[len(sub)-1][i][1])
                     for j in range(len(sub4)):
-                        sub2.append([sub4[j],sub[len(sub)-1][i][1]])
+                        sub2.append([sub[len(sub)-1][i][1],sub4[j]])
                 final.l[sub[len(sub)-1][i][1]].value=sub3
         sub.append(sub2)
     newOnes=[]
@@ -2719,14 +2771,14 @@ def optFull(f):
         for j in range(len(sub)):
             if f.l[sub[j]].type == 1:
                 sub3=[]
-                for j in range(len(f.l[sub[j]].value)):
+                for m in range(len(f.l[sub[j]].value)):
                     sub3.append([])
-                    for k in range(len(f.l[sub[j]].value[j])):
+                    for k in range(len(f.l[sub[j]].value[m])):
                         if k == 0:
-                            sub3[j].append(f.l[sub[j]].value[j][k])
+                            sub3[m].append(f.l[sub[j]].value[m][k])
                         else:
-                            if not f.l[sub[j]].value[j][k] == sub[j].type:
-                                sub3[j].append(f.l[sub[j]].value[j][k])
+                            if not f.l[sub[j]].value[m][k] == sub[j]:
+                                sub3[m].append(f.l[sub[j]].value[m][k])
                 final.l[sub[j]].value=sub3
             else:
                 if f.l[sub[j]].value[1] == ones[i]:
